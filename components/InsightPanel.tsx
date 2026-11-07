@@ -1,7 +1,7 @@
 'use client';
 import { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { motion, AnimatePresence } from 'framer-motion';
+
 import type { ZiweiChart, Palace } from '@/lib/ziwei/types';
 import type { TimeView } from './TimeNav';
 
@@ -125,21 +125,76 @@ function AiContent({ text, streaming }: { text: string; streaming?: boolean }) {
   );
 }
 
+/**
+ * Mỗi tab là một kết quả riêng:
+ *  - 6 tab chủ đề: bấm lần đầu thì gọi AI, lần sau hiện lại kết quả đã có (không gọi lại, không cộng dồn).
+ *  - Tab "Cung …" / "Tứ Hóa …": tạo khi bấm vào cung hoặc nhãn Tứ Hóa trên bàn lá số; mỗi lần thay nội dung mới.
+ *  - Tab "Hỏi đáp": hội thoại tự do, giữ lịch sử riêng của tab này.
+ */
+type ResultState = { text: string; status: 'loading' | 'done' | 'error' };
+type ChatMsg = { role: 'user' | 'assistant'; content: string };
+
+const ERR_MISSING = 'Chưa cấu hình AI luận giải. Vui lòng kiểm tra biến môi trường FREELLM_API_KEY trên server.';
+const ERR_FAIL = 'Luận giải thất bại, vui lòng bấm lại tab để thử lại.';
+
+async function streamInterpret(
+  chart: ZiweiChart,
+  messages: ChatMsg[],
+  onText: (full: string) => void,
+): Promise<'done' | 'error'> {
+  try {
+    const res = await fetch('/api/interpret', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ chart, messages }),
+    });
+    if (res.status === 404) { onText(ERR_MISSING); return 'error'; }
+    if (!res.ok || !res.body) { onText(ERR_FAIL); return 'error'; }
+    const reader = res.body.getReader();
+    const decoder = new TextDecoder();
+    let text = '';
+    let buf = '';
+    for (;;) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buf += decoder.decode(value, { stream: true });
+      const lines = buf.split('\n');
+      buf = lines.pop() ?? '';
+      for (const line of lines) {
+        if (!line.startsWith('data: ')) continue;
+        const data = line.slice(6).trim();
+        if (data === '[DONE]') continue;
+        try {
+          const delta = JSON.parse(data).delta?.text ?? '';
+          if (delta) { text += delta; onText(text); }
+        } catch { /* bỏ qua */ }
+      }
+    }
+    if (!text) { onText(ERR_FAIL); return 'error'; }
+    return 'done';
+  } catch {
+    onText(ERR_FAIL);
+    return 'error';
+  }
+}
+
 export default function InsightPanel({ chart, selectedPalace, selectedSiHua }: InsightPanelProps) {
-  const [messages, setMessages] = useState<Message[]>([]);
+  const [results, setResults] = useState<Record<string, ResultState>>({});
+  const [activeKey, setActiveKey] = useState<string>('overview');
+  // Tab động: cung / Tứ Hóa đang xem (chỉ giữ 1 cái mới nhất cho gọn)
+  const [focusTab, setFocusTab] = useState<{ key: string; label: string } | null>(null);
+  const [chat, setChat] = useState<ChatMsg[]>([]);
+  const [chatLoading, setChatLoading] = useState(false);
   const [input, setInput] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [activeTopic, setActiveTopic] = useState<string>('overview');
-  const messagesRef = useRef<Message[]>([]); // always-current copy for closures
-  const loadingRef = useRef(false);
+  const resultsRef = useRef(results);
+  resultsRef.current = results;
+  const panelRef = useRef<HTMLDivElement>(null);
+  const contentRef = useRef<HTMLDivElement>(null);
   const autoLoaded = useRef(false);
   const lastPalaceBranch = useRef<number | undefined>(undefined);
   const lastSiHuaKey = useRef<string | undefined>(undefined);
-  const scrollRef = useRef<HTMLDivElement>(null);
-  // Mobile: ô hỏi dính đáy màn hình; sau khi người dùng hỏi thì cuộn trang tới câu trả lời
+
   const [isMobile, setIsMobile] = useState(false);
-  const followRef = useRef(false);
-  const lastMsgRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     const mq = window.matchMedia('(max-width: 1023px)');
     const on = () => setIsMobile(mq.matches);
@@ -147,142 +202,104 @@ export default function InsightPanel({ chart, selectedPalace, selectedSiHua }: I
     return () => mq.removeEventListener('change', on);
   }, []);
 
-  // Keep refs in sync
-  useEffect(() => { messagesRef.current = messages; }, [messages]);
-  useEffect(() => { loadingRef.current = loading; }, [loading]);
+  /** Đưa khung kết quả vào tầm nhìn (mobile) và cuộn nội dung về đầu */
+  const reveal = () => {
+    if (contentRef.current) contentRef.current.scrollTop = 0;
+    if (isMobile) panelRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
 
-  // Auto-scroll
-  useEffect(() => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-    }
-  }, [messages]);
-  useEffect(() => {
-    if (!isMobile || !followRef.current) return;
-    followRef.current = false;
-    lastMsgRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  }, [messages.length]); // eslint-disable-line react-hooks/exhaustive-deps
+  /** Chạy 1 prompt độc lập cho 1 tab; force = chạy lại dù đã có kết quả */
+  const runTab = (key: string, prompt: string, force = false) => {
+    const cur = resultsRef.current[key];
+    if (!force && cur && cur.status !== 'error') return; // đã có/đang tải → chỉ hiển thị lại
+    setResults(r => ({ ...r, [key]: { text: '', status: 'loading' } }));
+    streamInterpret(chart, [{ role: 'user', content: prompt }], text =>
+      setResults(r => ({ ...r, [key]: { text, status: 'loading' } })),
+    ).then(status => setResults(r => ({ ...r, [key]: { text: r[key]?.text ?? '', status } })));
+  };
 
-  // Auto-generate 命格总览 on mount
+  const openTopic = (key: string) => {
+    setActiveKey(key);
+    runTab(key, TOPIC_PROMPTS[key]);
+    reveal();
+  };
+
+  // Tự chạy "Mệnh cách" lần đầu
   useEffect(() => {
     if (autoLoaded.current) return;
     autoLoaded.current = true;
-    sendMessage(TOPIC_PROMPTS.overview, true);
+    runTab('overview', TOPIC_PROMPTS.overview);
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Inject palace analysis when palace selected
+  // Bấm vào cung trên bàn lá số → tab "Cung …"
   useEffect(() => {
     if (!selectedPalace || selectedPalace.branch === lastPalaceBranch.current) return;
     lastPalaceBranch.current = selectedPalace.branch;
-
     const majorStars = selectedPalace.stars.filter(s => s.type === 'major');
     const starDesc = majorStars.length > 0
       ? majorStars.map(s => `${s.name}${s.siHua ? '化' + s.siHua : ''}`).join('、')
       : 'Vô chính diệu (mượn cung đối)';
     const role = PALACE_ROLES[selectedPalace.name] ?? '';
-
     const prompt = `Luận cung ${selectedPalace.name} của tôi (chủ về: ${role}; chính tinh: ${starDesc}). Trả lời theo đúng 3 mục:
 **Kết luận** — 1–2 câu: cung này tốt hay cần lưu ý, ảnh hưởng gì đến tôi.
 **Điểm chính** — 2–3 gạch đầu dòng (sao trong cung, Tam phương tứ chính).
 **Lời khuyên** — 1–2 gạch đầu dòng.`;
-
-    sendMessage(prompt, true);
+    const key = `palace:${selectedPalace.branch}`;
+    setFocusTab({ key, label: `Cung ${selectedPalace.name.replace(/宫$/, '')}` });
+    setActiveKey(key);
+    runTab(key, prompt);
+    reveal();
   }, [selectedPalace]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // 注入四化飞化分析
+  // Bấm nhãn Tứ Hóa (Đại Hạn / Lưu Niên) → tab "Tứ Hóa …"
   useEffect(() => {
     if (!selectedSiHua) return;
-    const key = `${selectedSiHua.starName}-${selectedSiHua.siHua}-${selectedSiHua.view}`;
-    if (key === lastSiHuaKey.current) return;
-    lastSiHuaKey.current = key;
-
-    // 找出该星所在宫位
-    const palaceOfStar = chart.palaces.find(p =>
-      p.stars.some(s => s.name === selectedSiHua.starName)
-    );
+    const sk = `${selectedSiHua.starName}-${selectedSiHua.siHua}-${selectedSiHua.view}`;
+    if (sk === lastSiHuaKey.current) return;
+    lastSiHuaKey.current = sk;
+    const palaceOfStar = chart.palaces.find(p => p.stars.some(s => s.name === selectedSiHua.starName));
     const palaceName = palaceOfStar?.name ?? 'Cung chưa rõ';
     const viewLabel = selectedSiHua.view === 'daxian' ? '大限' : '流年';
-
     const prompt = `${viewLabel}: ${selectedSiHua.starName}化${selectedSiHua.siHua} rơi vào cung ${palaceName}. Điều này ảnh hưởng gì đến tôi? Trả lời theo đúng 3 mục:
 **Kết luận** — 1–2 câu.
 **Điểm chính** — 2–3 gạch đầu dòng (lĩnh vực bị ảnh hưởng, thời điểm).
 **Lời khuyên** — 1–2 gạch đầu dòng.`;
-
-    sendMessage(prompt, true);
+    const key = `sihua:${sk}`;
+    setFocusTab({ key, label: `${selectedSiHua.starName}化${selectedSiHua.siHua}` });
+    setActiveKey(key);
+    runTab(key, prompt);
+    reveal();
   }, [selectedSiHua]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const streamResponse = async (apiMessages: { role: 'user' | 'assistant'; content: string }[]) => {
-    try {
-      const res = await fetch('/api/interpret', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ chart, messages: apiMessages }),
-      });
-      if (res.status === 404) throw new Error('api-missing');
-      if (!res.ok) throw new Error('Yêu cầu thất bại');
-      if (!res.body) throw new Error('Không có dữ liệu phản hồi');
-
-      const reader = res.body.getReader();
-      const decoder = new TextDecoder();
-      let assistantText = '';
-
-      setMessages(prev => [...prev, { role: 'assistant', content: '' }]);
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        const chunk = decoder.decode(value, { stream: true });
-        for (const line of chunk.split('\n')) {
-          if (!line.startsWith('data: ')) continue;
-          const data = line.slice(6);
-          if (data === '[DONE]') break;
-          try {
-            const delta = JSON.parse(data).delta?.text ?? '';
-            assistantText += delta;
-            setMessages(prev => {
-              const updated = [...prev];
-              updated[updated.length - 1] = { role: 'assistant', content: assistantText };
-              return updated;
-            });
-          } catch { /* skip */ }
-        }
-      }
-    } catch (e) {
-      const missing = e instanceof Error && e.message === 'api-missing';
-      setMessages(prev => [...prev, { role: 'assistant', content: missing ? 'Chưa cấu hình AI luận giải. Vui lòng kiểm tra biến môi trường FREELLM_API_KEY trên server.' : 'Luận giải thất bại, vui lòng thử lại sau.' }]);
-    } finally {
-      setLoading(false);
-      loadingRef.current = false;
-    }
-  };
-
-  const sendMessage = (text: string, hidden = false) => {
-    if (!text.trim() || loadingRef.current) return;
-    loadingRef.current = true;
-    setLoading(true);
-
-    const userMsg: Message = { role: 'user', content: text, hidden };
-    // Capture current messages synchronously via ref (avoids stale closure)
-    const apiMessages = [...messagesRef.current, userMsg].map(m => ({
-      role: m.role,
-      content: m.content,
-    }));
-
-    if (messagesRef.current.length > 0) followRef.current = true; // không cuộn với phần tổng quan tự chạy lúc đầu
-    setMessages(prev => [...prev, userMsg]);
-    setInput('');
-    streamResponse(apiMessages);
-  };
-
-  const handleTopicClick = (topicKey: string) => {
-    if (loadingRef.current) return;
-    setActiveTopic(topicKey);
-    sendMessage(TOPIC_PROMPTS[topicKey], true);
-  };
-
+  // Hỏi đáp tự do — chỉ tab "Hỏi đáp" giữ hội thoại
   const handleSend = () => {
-    sendMessage(input);
+    const q = input.trim();
+    if (!q || chatLoading) return;
+    const history: ChatMsg[] = [...chat, { role: 'user', content: q }];
+    setChat([...history, { role: 'assistant', content: '' }]);
+    setInput('');
+    setActiveKey('chat');
+    setChatLoading(true);
+    if (isMobile) setTimeout(() => panelRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50);
+    streamInterpret(chart, history.slice(-8), text =>
+      setChat(c => { const u = [...c]; u[u.length - 1] = { role: 'assistant', content: text }; return u; }),
+    ).finally(() => setChatLoading(false));
   };
+
+  // Hỏi đáp: tự cuộn xuống tin mới trong khung (desktop)
+  useEffect(() => {
+    if (activeKey === 'chat' && contentRef.current && !isMobile) {
+      contentRef.current.scrollTop = contentRef.current.scrollHeight;
+    }
+  }, [chat, activeKey, isMobile]);
+
+  const tabs: { key: string; label: string }[] = [
+    ...TOPICS.map(t => ({ key: t.key as string, label: t.label })),
+    ...(focusTab ? [focusTab] : []),
+    { key: 'chat', label: chat.length ? `Hỏi đáp (${chat.filter(m => m.role === 'user').length})` : 'Hỏi đáp' },
+  ];
+  const isTopic = TOPICS.some(t => t.key === activeKey);
+  const cur = results[activeKey];
 
   const inputBar = (
     <div
@@ -297,10 +314,10 @@ export default function InsightPanel({ chart, selectedPalace, selectedSiHua }: I
           value={input}
           onChange={e => setInput(e.target.value)}
           onKeyDown={e => e.key === 'Enter' && !e.shiftKey && handleSend()}
-          placeholder={isMobile ? 'Hỏi về lá số của bạn…' : 'Hỏi thêm, ví dụ: Năm nay có nên đổi việc không?'}
-          disabled={loading}
+          placeholder={isMobile ? 'Hỏi về lá số của bạn…' : 'Hỏi riêng, ví dụ: Năm nay có nên đổi việc không?'}
+          disabled={chatLoading}
           enterKeyHint="send"
-          className={`flex-1 min-w-0 rounded-lg px-3 focus:outline-none transition-colors ${isMobile ? 'py-3 text-[16px]' : 'py-2 text-[11px]'}`}
+          className={`flex-1 min-w-0 rounded-lg px-3 focus:outline-none transition-colors ${isMobile ? 'py-3 text-[16px]' : 'py-2 text-[12px]'}`}
           style={{
             background: isMobile ? 'rgba(255,255,255,0.06)' : 'var(--t-card)',
             border: `1px solid ${isMobile ? 'rgba(212,168,67,0.45)' : 'var(--t-border)'}`,
@@ -309,114 +326,105 @@ export default function InsightPanel({ chart, selectedPalace, selectedSiHua }: I
         />
         <button
           onClick={handleSend}
-          disabled={loading || !input.trim()}
-          className={`rounded-lg font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed ${isMobile ? 'px-5 text-[15px]' : 'px-3 py-2 text-[11px]'}`}
+          disabled={chatLoading || !input.trim()}
+          className={`rounded-lg font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed ${isMobile ? 'px-5 text-[15px]' : 'px-4 py-2 text-[12px]'}`}
           style={isMobile
             ? { background: 'linear-gradient(135deg, #b8862e, #e0b553)', color: '#140d02', border: 'none' }
-            : { background: 'rgba(212,168,67,0.15)', border: '1px solid rgba(212,168,67,0.25)', color: 'var(--t-gold)' }}
+            : { background: 'rgba(212,168,67,0.15)', border: '1px solid rgba(212,168,67,0.3)', color: 'var(--t-gold)' }}
         >
-          {loading ? '…' : 'Hỏi'}
+          {chatLoading ? '…' : 'Hỏi'}
         </button>
       </div>
     </div>
   );
 
   return (
-    <div className="flex flex-col h-full rounded-xl overflow-hidden card-glass">
+    <div ref={panelRef} className="flex flex-col h-full rounded-xl overflow-hidden card-glass" style={{ scrollMarginTop: 12, border: '1px solid var(--t-border)', background: 'var(--t-card)' }}>
 
-      {/* ── Topic buttons ── */}
+      {/* ── Tabs ── */}
       <div className="flex-shrink-0 px-2 pt-2.5 pb-2" style={{ borderBottom: '1px solid var(--t-border)' }}>
-        <div className="flex gap-1.5 overflow-x-auto lg:grid lg:grid-cols-6 lg:gap-1 lg:overflow-visible" style={{ scrollbarWidth: 'none' }}>
-          {TOPICS.map(t => {
-            const isActive = activeTopic === t.key;
+        <div className="flex flex-wrap gap-1.5">
+          {tabs.map(t => {
+            const isActive = activeKey === t.key;
+            const st = results[t.key]?.status;
             return (
               <button
                 key={t.key}
-                onClick={() => handleTopicClick(t.key)}
-                disabled={loading}
-                className="flex-shrink-0 px-3 py-2 text-[13px] lg:px-0 lg:py-1.5 lg:text-[10px] whitespace-nowrap font-medium rounded-lg transition-all duration-150 disabled:opacity-40"
+                onClick={() => {
+                  if (t.key === 'chat' || t.key === focusTab?.key) { setActiveKey(t.key); reveal(); }
+                  else openTopic(t.key);
+                }}
+                className="px-3 py-1.5 text-[12px] lg:text-[11px] whitespace-nowrap font-medium rounded-lg transition-all duration-150"
                 style={{
-                  background: isActive ? 'rgba(212,168,67,0.12)' : 'transparent',
-                  border: `1px solid ${isActive ? 'rgba(212,168,67,0.3)' : 'var(--t-border)'}`,
-                  color: isActive ? 'var(--t-gold)' : 'var(--t-faint)',
+                  background: isActive ? 'rgba(212,168,67,0.14)' : 'transparent',
+                  border: `1px solid ${isActive ? 'rgba(212,168,67,0.45)' : 'var(--t-border)'}`,
+                  color: isActive ? 'var(--t-gold)' : 'var(--t-text2)',
                 }}
               >
                 {t.label}
+                {st === 'loading' && <span className="ml-1 animate-pulse">…</span>}
+                {st === 'done' && !isActive && t.key !== 'chat' && <span className="ml-1 opacity-60">✓</span>}
               </button>
             );
           })}
         </div>
       </div>
 
-      {/* ── Messages ── */}
-      <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 space-y-4 min-h-0">
-
-        {/* Loading state before first message */}
-        {messages.length === 0 && (
-          <div className="flex flex-col items-center justify-center h-full text-center">
-            <div className="text-4xl mb-3" style={{ color: 'var(--t-gold)', opacity: 0.1 }}>✦</div>
-            <p className="text-[10px] animate-pulse" style={{ color: 'var(--t-faint)' }}>Đang luận giải mệnh cách…</p>
-          </div>
+      {/* ── Nội dung của tab đang chọn ── */}
+      <div ref={contentRef} className="flex-1 overflow-y-auto p-4 min-h-[220px] lg:min-h-0">
+        {activeKey !== 'chat' && (
+          <>
+            <div className="text-[10px] tracking-wider mb-2 flex items-center gap-1.5" style={{ color: 'var(--t-faint)' }}>
+              <span style={{ color: 'var(--t-gold)', opacity: 0.6 }}>✦</span>
+              {tabs.find(t => t.key === activeKey)?.label} · Luận giải AI, mang tính tham khảo
+              {cur?.status === 'done' && (
+                <button className="ml-auto underline" style={{ color: 'var(--t-faint)' }}
+                  onClick={() => {
+                    if (isTopic) runTab(activeKey, TOPIC_PROMPTS[activeKey], true);
+                    else { lastPalaceBranch.current = undefined; lastSiHuaKey.current = undefined; setResults(r => { const n = { ...r }; delete n[activeKey]; return n; }); }
+                  }}>
+                  {isTopic ? 'Luận lại' : 'Xóa'}
+                </button>
+              )}
+            </div>
+            {!cur || (cur.status === 'loading' && !cur.text) ? (
+              <p className="text-[12px] animate-pulse py-6 text-center" style={{ color: 'var(--t-faint)' }}>Đang luận giải…</p>
+            ) : (
+              <AiContent text={cur.text} streaming={cur.status === 'loading'} />
+            )}
+          </>
         )}
 
-        <AnimatePresence initial={false}>
-          {messages.map((msg, i) => {
-            if (msg.role === 'user' && msg.hidden) return null;
-
-            if (msg.role === 'user') {
-              return (
-                <motion.div
-                  key={i}
-                  initial={{ opacity: 0, y: 6 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="flex justify-end"
-                >
-                  <div
-                    className="max-w-[85%] rounded-xl px-3 py-2 text-[11px]"
-                    style={{
-                      background: 'rgba(212,168,67,0.08)',
-                      border: '1px solid rgba(212,168,67,0.18)',
-                      color: 'var(--t-gold)',
-                    }}
-                  >
-                    {msg.content}
+        {activeKey === 'chat' && (
+          chat.length === 0 ? (
+            <div className="text-center py-8 text-[12px] leading-relaxed" style={{ color: 'var(--t-faint)' }}>
+              Gõ câu hỏi riêng của bạn ở ô bên dưới.<br />Ví dụ: “Năm 2027 có nên mua nhà không?”
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {chat.map((m, i) => m.role === 'user' ? (
+                <div key={i} className="flex justify-end">
+                  <div className="max-w-[85%] rounded-xl px-3 py-2 text-[12px]"
+                    style={{ background: 'rgba(212,168,67,0.1)', border: '1px solid rgba(212,168,67,0.25)', color: 'var(--t-gold)' }}>
+                    {m.content}
                   </div>
-                </motion.div>
-              );
-            }
-
-            // Assistant message
-            const isLastMsg = i === messages.length - 1;
-            return (
-              <motion.div
-                key={i}
-                ref={isLastMsg ? lastMsgRef : undefined}
-                style={{ scrollMarginTop: 16 }}
-                initial={{ opacity: 0, y: 6 }}
-                animate={{ opacity: 1, y: 0 }}
-              >
-                <div
-                  className="text-[9px] tracking-widest mb-2 flex items-center gap-1.5"
-                  style={{ color: 'var(--t-faint)' }}
-                >
-                  <span style={{ color: 'var(--t-gold)', opacity: 0.4 }}>✦</span>
-                  Luận giải AI · mang tính tham khảo
                 </div>
-                <AiContent text={msg.content} streaming={loading && isLastMsg} />
-              </motion.div>
-            );
-          })}
-        </AnimatePresence>
+              ) : (
+                <div key={i}>
+                  {m.content
+                    ? <AiContent text={m.content} streaming={chatLoading && i === chat.length - 1} />
+                    : <p className="text-[12px] animate-pulse" style={{ color: 'var(--t-faint)' }}>Đang trả lời…</p>}
+                </div>
+              ))}
+            </div>
+          )
+        )}
       </div>
 
-      {/* ── Input ── (desktop: trong khung; mobile: thanh dính đáy màn hình) */}
+      {/* ── Ô hỏi (desktop: trong khung; mobile: dính đáy màn hình) ── */}
       {isMobile ? (
-        <>
-          <div style={{ height: 8 }} />
-          {typeof document !== 'undefined' && createPortal(inputBar, document.body)}
-        </>
+        typeof document !== 'undefined' ? createPortal(inputBar, document.body) : null
       ) : inputBar}
-
     </div>
   );
 }
