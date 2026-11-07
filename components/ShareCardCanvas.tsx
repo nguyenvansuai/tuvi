@@ -90,10 +90,10 @@ export default function ShareCardCanvas({ chart, birth, highlight }: ShareCardPr
             background: 'linear-gradient(135deg, #d4a948 0%, #b8922a 100%)',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             color: 'white', fontSize: '15px', fontWeight: 700,
-          }}>紫</div>
+          }}>Tử</div>
           <div>
             <div style={{ fontSize: '15px', color: '#3d2f10', fontWeight: 600, letterSpacing: '0.12em', lineHeight: 1.2 }}>紫微命盘</div>
-            <div style={{ fontSize: '9px', color: '#a89b7c', letterSpacing: '0.18em', marginTop: '2px' }}>倪海厦正宗 · ZI WEI</div>
+            <div style={{ fontSize: '9px', color: '#a89b7c', letterSpacing: '0.18em', marginTop: '2px' }}>Tử Vi Sự AI · ZI WEI</div>
           </div>
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
@@ -244,8 +244,8 @@ export default function ShareCardCanvas({ chart, birth, highlight }: ShareCardPr
                 marginBottom: '10px',
                 letterSpacing: '0.05em',
               }}>
-                <span style={{ color: '#a89b7c' }}>当前大限 </span>
-                <span style={{ fontWeight: 600 }}>{dx.startAge}–{dx.endAge} 岁 · {dx.palaceName}</span>
+                <span style={{ color: '#a89b7c' }}>Đại Hạn hiện tại </span>
+                <span style={{ fontWeight: 600 }}>{dx.startAge}–{dx.endAge}  tuổi · {dx.palaceName}</span>
               </div>
             )}
             <div style={{
@@ -255,13 +255,13 @@ export default function ShareCardCanvas({ chart, birth, highlight }: ShareCardPr
               borderRadius: '6px',
             }}>
               <div style={{ fontSize: '11px', color: '#3d2f10', fontWeight: 600, letterSpacing: '0.08em', lineHeight: 1.4 }}>
-                紫微为门 · 天地人为路
+                Tử Vi Đẩu Số · Thiên – Địa – Nhân
               </div>
               <div style={{ fontSize: '10px', color: '#8b6a14', fontWeight: 600, letterSpacing: '0.08em', lineHeight: 1.4, marginTop: '2px' }}>
-                倪海厦为师 · AI 答疑伴学
+                AI luận giải · AI Hỏi đáp
               </div>
               <div style={{ fontSize: '8px', color: '#a89b7c', letterSpacing: '0.15em', marginTop: '4px' }}>
-                扫码起你的命盘 →
+                Lập lá số của bạn →
               </div>
             </div>
           </div>

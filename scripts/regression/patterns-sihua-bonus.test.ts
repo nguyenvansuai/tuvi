@@ -48,12 +48,12 @@ assert.ok(sample.palaces.every(p => p.stars.every(s => !/^化[禄权科忌]$/.te
 // 逐日扫一年、固定午时，统计每个加分项「该出现」与「实际出现」的盘数
 const checks: { pattern: string; bonus: string; expect: (c: ZiweiChart) => boolean }[] = [
   {
-    pattern: '府相朝垣', bonus: '命宫见禄',
+    pattern: '府相朝垣', bonus: 'Cung Mệnh gặp Lộc',
     expect: c => c.palaces.some(p => p.branch === c.mingGongBranch && p.stars.some(s => s.name === '禄存' || s.siHua === '禄')),
   },
-  { pattern: '杀破狼', bonus: '三方有化禄或化权（动得有力）', expect: c => sanFangHasSiHua(c, '禄') || sanFangHasSiHua(c, '权') },
-  { pattern: '机月同梁', bonus: '再会化科', expect: c => sanFangHasSiHua(c, '科') },
-  { pattern: '阳梁昌禄', bonus: '再会化科', expect: c => sanFangHasSiHua(c, '科') },
+  { pattern: '杀破狼', bonus: 'Tam phương có Hóa Lộc hoặc Hóa Quyền (động mà có lực)', expect: c => sanFangHasSiHua(c, '禄') || sanFangHasSiHua(c, '权') },
+  { pattern: '机月同梁', bonus: 'Thêm hội Hóa Khoa', expect: c => sanFangHasSiHua(c, '科') },
+  { pattern: '阳梁昌禄', bonus: 'Thêm hội Hóa Khoa', expect: c => sanFangHasSiHua(c, '科') },
 ];
 const hits = new Map<string, number>();
 const start = Date.UTC(1990, 0, 1);

@@ -13,20 +13,25 @@ function AiContent({ text, streaming }: { text: string; streaming?: boolean }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
       {lines.map((line, i) => {
-        const sectionMatch = line.match(/^\*\*【(.+?)】\*\*$/);
+        const sectionMatch = line.trim().match(/^\*\*[\[【](.+?)[\]】]\*\*:?$/)
+          || line.trim().match(/^#{1,4}\s+(.+?)\s*$/)
+          || line.trim().match(/^\*\*([^*]{2,80})\*\*:?$/);
         if (sectionMatch) {
+          const title = sectionMatch[1].replace(/^\*\*|\*\*$/g, '').replace(/^[\[【]|[\]】]$/g, '');
           return (
             <div key={i} style={{ paddingTop: i === 0 ? 0 : '14px', paddingBottom: '4px' }}>
-              <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--ac)', letterSpacing: '0.04em' }}>
-                【{sectionMatch[1]}】
+              <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--ac)', letterSpacing: '0.02em' }}>
+                {title}
               </span>
             </div>
           );
         }
         if (line.trim() === '') return <div key={i} style={{ height: '4px' }} />;
-        const parts = line.split(/\*\*(.+?)\*\*/);
+        const bullet = line.match(/^\s*(?:[-*•]|\d+[.)])\s+(.*)$/);
+        const parts = (bullet ? bullet[1] : line).split(/\*\*(.+?)\*\*/);
         return (
-          <div key={i} style={{ fontSize: '13px', lineHeight: 1.75, color: 'var(--tx-2)' }}>
+          <div key={i} style={{ fontSize: '13px', lineHeight: 1.75, color: 'var(--tx-2)', position: 'relative', paddingLeft: bullet ? 14 : 0 }}>
+            {bullet && <span style={{ position: 'absolute', left: 0, color: 'var(--ac)' }}>•</span>}
             {parts.map((part, j) =>
               j % 2 === 0
                 ? part
@@ -87,7 +92,7 @@ export default function HemingPage() {
   const runAnalysis = useCallback(async (q?: string) => {
     setFormError(null);
     if (!isFormReady(formA) || !isFormReady(formB)) {
-      setFormError('请先填写双方完整出生信息');
+      setFormError('Vui lòng điền đầy đủ thông tin ngày sinh của cả hai người');
       return;
     }
     setAnalyzing(true);
@@ -178,12 +183,12 @@ export default function HemingPage() {
           }}
         >
           <span style={{ fontSize: '16px' }}>‹</span>
-          <span>返回</span>
+          <span>Quay lại</span>
         </button>
         <div style={{ width: '1px', height: '20px', background: 'var(--bdr-med)' }} />
-        <span style={{ fontSize: '12px', color: 'var(--ac)', letterSpacing: '0.2em' }}>合盘分析</span>
+        <span style={{ fontSize: '12px', color: 'var(--ac)', letterSpacing: '0.2em' }}>Xem hợp tuổi</span>
         <div style={{ flex: 1 }} />
-        <span style={{ fontSize: '11px', color: 'var(--tx-3)' }}>感情 · 合伙 · 亲子 · 朋友</span>
+        <span style={{ fontSize: '11px', color: 'var(--tx-3)' }}>Tình cảm · Hợp tác · Cha mẹ – con cái · Bạn bè</span>
       </header>
 
       {/* 主体 */}
@@ -193,10 +198,10 @@ export default function HemingPage() {
         <div style={{ textAlign: 'center', marginBottom: '36px' }}>
           <div style={{ fontSize: '28px', color: 'var(--ac)', opacity: 0.15, marginBottom: '12px' }}>☯</div>
           <h1 style={{ fontSize: '22px', fontWeight: 600, letterSpacing: '0.15em', color: 'var(--tx-0)', marginBottom: '8px' }}>
-            紫微合盘
+            Hợp lá số Tử Vi
           </h1>
           <p style={{ fontSize: '13px', color: 'var(--tx-3)', lineHeight: 1.6 }}>
-            输入两个人的出生信息，AI 基于倪海厦体系分析双方命盘的缘分匹配度、感情走向与相处建议
+            Nhập thông tin ngày sinh của hai người, AI AI phân tích mức độ hợp duyên, xu hướng tình cảm và lời khuyên khi chung sống dựa trên hai lá số
           </p>
         </div>
 
@@ -205,7 +210,7 @@ export default function HemingPage() {
           className="heming-grid">
           {/* 甲方 */}
           <div style={cardStyle}>
-            <span style={labelStyle}>甲方 — A</span>
+            <span style={labelStyle}>Người A — A</span>
             <BirthForm
               hideSubmit
               onSubmit={() => {}}
@@ -215,7 +220,7 @@ export default function HemingPage() {
 
           {/* 乙方 */}
           <div style={cardStyle}>
-            <span style={labelStyle}>乙方 — B</span>
+            <span style={labelStyle}>Người B — B</span>
             <BirthForm
               hideSubmit
               onSubmit={() => {}}
@@ -236,15 +241,15 @@ export default function HemingPage() {
           {/* 区块标题 */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: (analysis || analyzing) ? '20px' : '24px' }}>
             <span style={{ color: 'var(--ac)', opacity: 0.6 }}>◉</span>
-            <span style={{ fontSize: '11px', letterSpacing: '0.3em', color: 'var(--tx-3)' }}>合盘分析 · HEMING</span>
+            <span style={{ fontSize: '11px', letterSpacing: '0.3em', color: 'var(--tx-3)' }}>Phân tích hợp lá số · HEMING</span>
           </div>
 
           {/* 状态分支 */}
           {!analysis && !analyzing && (
             <div style={{ textAlign: 'center', padding: '32px 0' }}>
               <div style={{ fontSize: '13px', color: 'var(--tx-3)', marginBottom: '24px', lineHeight: 1.7 }}>
-                填好双方出生信息后，点击下方按钮<br />
-                AI 将基于倪海厦体系深度分析两人缘分匹配度
+                Điền thông tin ngày sinh của hai người rồi bấm nút bên dưới<br />
+                AI AI sẽ phân tích sâu mức độ hợp duyên của hai người
               </div>
               <button
                 onClick={() => runAnalysis()}
@@ -259,7 +264,7 @@ export default function HemingPage() {
                 onMouseEnter={e => { (e.currentTarget as HTMLElement).style.transform = 'translateY(-1px)'; }}
                 onMouseLeave={e => { (e.currentTarget as HTMLElement).style.transform = 'translateY(0)'; }}
               >
-                开始合盘分析
+                Bắt đầu xem hợp
               </button>
               {formError && (
                 <div style={{ marginTop: '20px', fontSize: '13px', color: '#dc2626' }}>
@@ -276,7 +281,7 @@ export default function HemingPage() {
                 border: '2px solid var(--bdr-med)', borderTopColor: 'var(--ac)',
                 borderRadius: '50%', animation: 'spin 0.8s linear infinite',
               }} />
-              正在对比双方命盘…
+              Đang so sánh hai lá số…
             </div>
           )}
 
@@ -285,8 +290,8 @@ export default function HemingPage() {
           {analysisError && (
             <div style={{ padding: '12px 16px', borderRadius: '10px', border: '1px solid var(--bdr)', background: 'var(--bg-card)', fontSize: '13px', color: 'var(--tx-2)', marginTop: '12px' }}>
               {apiMissing
-                ? '开源版不含合盘 AI 分析接口（/api/heming），需要你自己实现后才能用。两人的命盘可以分别到「排盘」页（/chart）查看。'
-                : '分析暂时不可用，请重试。'}
+                ? 'Chưa cấu hình AI phân tích hợp lá số. Bạn có thể xem riêng từng lá số ở trang “Lập lá số” (/chart).'
+                : 'Phân tích tạm thời chưa khả dụng, vui lòng thử lại.'}
             </div>
           )}
         </div>
@@ -295,17 +300,17 @@ export default function HemingPage() {
         {analysis && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginTop: '16px' }}>
             <div style={{ fontSize: '11px', letterSpacing: '0.2em', color: 'var(--tx-3)', marginBottom: '4px' }}>
-              针对此次合盘继续追问
+              Hỏi thêm về kết quả hợp lá số này
             </div>
 
             {/* 快捷问题 */}
             <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
               {[
-                '感情匹配度如何？',
-                '适合合伙创业吗？',
-                '两人结婚是否合适？',
-                '哪方面最容易产生矛盾？',
-                '财运是否互补？',
+                'Mức độ hợp nhau trong tình cảm thế nào?',
+                'Có hợp làm ăn chung không?',
+                'Hai người có hợp để kết hôn không?',
+                'Dễ xảy ra mâu thuẫn ở mặt nào nhất?',
+                'Tài vận có bổ trợ cho nhau không?',
               ].map(q => (
                 <button
                   key={q}
@@ -335,7 +340,7 @@ export default function HemingPage() {
                 value={question}
                 onChange={e => setQuestion(e.target.value)}
                 onKeyDown={e => { if (e.key === 'Enter' && !analyzing) runAnalysis(question || undefined); }}
-                placeholder="继续追问，如：哪几年是两人感情关键期？"
+                placeholder="Hỏi thêm, ví dụ: Những năm nào là giai đoạn then chốt của hai người?"
                 disabled={analyzing}
                 className="input-base"
                 style={{ fontSize: '13px', flex: 1 }}
@@ -352,7 +357,7 @@ export default function HemingPage() {
                   transition: 'all 0.15s', whiteSpace: 'nowrap',
                 }}
               >
-                {analyzing ? '分析中…' : '继续追问'}
+                {analyzing ? 'Đang phân tích…' : 'Hỏi thêm'}
               </button>
             </div>
           </div>

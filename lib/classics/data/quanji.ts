@@ -9,16 +9,16 @@
 import type { Book } from '../types';
 
 export const ziWeiQuanJi: Book = {
-  title: '紫微斗数全集',
+  title: 'Tử Vi Đẩu Số Toàn Tập',
   slug: 'quanji',
-  dynasty: '明代',
-  author: '相传陈抟祖师传',
-  intro: '紫微斗数最权威的古籍之一，相传由宋代陈抟祖师传授。倪海厦《天纪》体系的核心引证来源。',
+  dynasty: 'Đời Minh',
+  author: 'Tương truyền do Trần Đoàn lão tổ truyền lại',
+  intro: 'Một trong những cổ thư uy tín nhất của Tử Vi Đẩu Số, tương truyền do Trần Đoàn lão tổ đời Tống truyền dạy. Là nguồn dẫn chứng cốt lõi của hệ “Thiên Kỷ” của Nghê Hải Hạ.',
   wordCount: 80000,
   chapters: [
     {
-      title: '卷一·总论',
-      subtitle: '紫微斗数的基本立法',
+      title: 'Quyển 1 · Tổng luận',
+      subtitle: 'Phép lập căn bản của Tử Vi Đẩu Số',
       paragraphs: [
         {
           id: 'qj-1-1',
@@ -38,8 +38,8 @@ export const ziWeiQuanJi: Book = {
       ],
     },
     {
-      title: '卷二·紫微星论',
-      subtitle: '帝座之尊',
+      title: 'Quyển 2 · Luận sao Tử Vi',
+      subtitle: 'Ngôi đế tôn quý',
       paragraphs: [
         {
           id: 'qj-2-1',
@@ -64,8 +64,8 @@ export const ziWeiQuanJi: Book = {
       ],
     },
     {
-      title: '卷三·南斗六星论',
-      subtitle: '天府、太阴、贪狼、巨门、天相、天梁',
+      title: 'Quyển 3 · Luận sáu sao Nam Đẩu',
+      subtitle: 'Thiên Phủ, Thái Âm, Tham Lang, Cự Môn, Thiên Tướng, Thiên Lương',
       paragraphs: [
         {
           id: 'qj-3-1',
@@ -100,8 +100,8 @@ export const ziWeiQuanJi: Book = {
       ],
     },
     {
-      title: '卷四·北斗六星论',
-      subtitle: '紫微、天机、太阳、武曲、廉贞、破军',
+      title: 'Quyển 4 · Luận sáu sao Bắc Đẩu',
+      subtitle: 'Tử Vi, Thiên Cơ, Thái Dương, Vũ Khúc, Liêm Trinh, Phá Quân',
       paragraphs: [
         {
           id: 'qj-4-1',
@@ -136,8 +136,8 @@ export const ziWeiQuanJi: Book = {
       ],
     },
     {
-      title: '卷五·四化与格局论',
-      subtitle: '四化之力与重要格局',
+      title: 'Quyển 5 · Luận Tứ Hóa và cách cục',
+      subtitle: 'Sức mạnh Tứ Hóa và các cách cục quan trọng',
       paragraphs: [
         {
           id: 'qj-5-1',

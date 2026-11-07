@@ -1,11 +1,12 @@
 import type { BirthFormState } from '@/components/BirthForm';
 import type { BirthInfo } from './types';
 import { branchFromSolarMinutes, resolveZiweiDayOffset, shiftGregorianDate } from './true-solar-time';
+import { VN_MERIDIAN, clockMeridian } from './cities';
 
 /** 根据北京时间 + 经度计算真太阳时时辰支 (0-11) */
-export function calcTrueSolarBranch(clockHour: number, clockMinute: number, longitude: number): number {
+export function calcTrueSolarBranch(clockHour: number, clockMinute: number, longitude: number, meridian: number = VN_MERIDIAN): number {
   const clockMins = clockHour * 60 + clockMinute;
-  const offset = (longitude - 120) * 4;
+  const offset = (longitude - meridian) * 4;
   const solar = ((clockMins + offset) % 1440 + 1440) % 1440;
   if (solar >= 1380 || solar < 60) return 0;
   return Math.floor((solar - 60) / 120) + 1;
@@ -27,7 +28,9 @@ export function formToBirthInfo(form: BirthFormState): BirthInfo {
   // 晚子时换日按真太阳时判定，与时辰支同一口径（见 true-solar-time.ts 的 resolveZiweiDayOffset）。
   // 只看钟表 23 点会和经度校正后的时辰错位：东经 100° 钟表 23:30 是真太阳时 22:10 亥时，不该换日。
   if (!form.unknownTime) {
-    const solar = (parseInt(form.clockHour) || 0) * 60 + (parseInt(form.clockMinute) || 0) + (form.longitude - 120) * 4;
+    // Việt Nam: kinh tuyến chuẩn 105° (UTC+7); miền Nam 1960–13/6/1975 dùng UTC+8 (120°). Không chọn nơi sinh → không hiệu chỉnh.
+    const offsetMin = form.province ? (form.longitude - clockMeridian(form.province, y, m, d)) * 4 : 0;
+    const solar = (parseInt(form.clockHour) || 0) * 60 + (parseInt(form.clockMinute) || 0) + offsetMin;
     const normalizedMinutes = ((solar % 1440) + 1440) % 1440;
     hour = branchFromSolarMinutes(normalizedMinutes);
     const dayOffset = resolveZiweiDayOffset({ dayOffset: Math.floor(solar / 1440), normalizedMinutes, branch: hour });
@@ -62,7 +65,7 @@ export function formToSearchParams(form: BirthFormState): URLSearchParams {
   }
   if (form.province) p.set('p', form.province);
   if (form.city) p.set('c', form.city);
-  if (form.longitude && form.longitude !== 120) p.set('lo', String(form.longitude));
+  if (form.longitude && form.longitude !== VN_MERIDIAN) p.set('lo', String(form.longitude));
   p.set('g', form.gender === 'male' ? 'm' : 'f');
   return p;
 }
@@ -83,7 +86,7 @@ export function searchParamsToForm(params: URLSearchParams): Partial<BirthFormSt
     clockMinute: params.get('mi') || '0',
     province: params.get('p') || '',
     city: params.get('c') || '',
-    longitude: parseFloat(params.get('lo') || '120'),
+    longitude: parseFloat(params.get('lo') || String(VN_MERIDIAN)),
     gender: params.get('g') === 'f' ? 'female' : 'male',
   };
 }

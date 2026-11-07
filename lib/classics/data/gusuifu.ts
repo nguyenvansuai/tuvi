@@ -8,16 +8,16 @@
 import type { Book } from '../types';
 
 export const guSuiFu: Book = {
-  title: '骨髓赋',
+  title: 'Cốt Tủy Phú',
   slug: 'gusuifu',
-  dynasty: '明代',
-  author: '紫微斗数古籍传承（无确切作者）',
-  intro: '紫微斗数最浓缩的核心口诀，全文约 1500 字。倪海厦《天纪》中多次援引此赋，是紫微学者必读经典。',
+  dynasty: 'Đời Minh',
+  author: 'Cổ thư Tử Vi truyền thừa (không rõ tác giả)',
+  intro: 'Khẩu quyết cốt lõi cô đọng nhất của Tử Vi Đẩu Số, toàn văn khoảng 1.500 chữ. “Thiên Kỷ” của Nghê Hải Hạ dẫn bài phú này nhiều lần — kinh điển bắt buộc của người học Tử Vi.',
   wordCount: 1500,
   chapters: [
     {
-      title: '总论篇',
-      subtitle: '紫微斗数的基本立论',
+      title: 'Thiên tổng luận',
+      subtitle: 'Lập luận căn bản của Tử Vi Đẩu Số',
       paragraphs: [
         {
           id: 'gsf-1-1',
@@ -37,8 +37,8 @@ export const guSuiFu: Book = {
       ],
     },
     {
-      title: '紫微星论',
-      subtitle: '帝座之尊，得辅则贵',
+      title: 'Luận sao Tử Vi',
+      subtitle: 'Ngôi đế tôn quý, được phò tá thì sang',
       paragraphs: [
         {
           id: 'gsf-2-1',
@@ -63,8 +63,8 @@ export const guSuiFu: Book = {
       ],
     },
     {
-      title: '七杀星论',
-      subtitle: '将星孤独，宜武职',
+      title: 'Luận sao Thất Sát',
+      subtitle: 'Tướng tinh cô độc, hợp võ chức',
       paragraphs: [
         {
           id: 'gsf-3-1',
@@ -84,8 +84,8 @@ export const guSuiFu: Book = {
       ],
     },
     {
-      title: '杀破狼格',
-      subtitle: '开创闯荡，变动之命',
+      title: 'Cách Sát Phá Tham',
+      subtitle: 'Khai sáng xông pha, mệnh biến động',
       paragraphs: [
         {
           id: 'gsf-4-1',
@@ -100,8 +100,8 @@ export const guSuiFu: Book = {
       ],
     },
     {
-      title: '机月同梁',
-      subtitle: '稳定累积，宜公职',
+      title: 'Cơ Nguyệt Đồng Lương',
+      subtitle: 'Ổn định tích lũy, hợp công chức',
       paragraphs: [
         {
           id: 'gsf-5-1',
@@ -116,8 +116,8 @@ export const guSuiFu: Book = {
       ],
     },
     {
-      title: '四化星论',
-      subtitle: '化禄化权化科化忌之吉凶',
+      title: 'Luận sao Tứ Hóa',
+      subtitle: 'Cát hung của Hóa Lộc, Quyền, Khoa, Kỵ',
       paragraphs: [
         {
           id: 'gsf-6-1',
@@ -142,8 +142,8 @@ export const guSuiFu: Book = {
       ],
     },
     {
-      title: '辅弼魁钺论',
-      subtitle: '六吉星之贵',
+      title: 'Luận Phụ Bật Khôi Việt',
+      subtitle: 'Cái quý của lục cát tinh',
       paragraphs: [
         {
           id: 'gsf-7-1',
@@ -163,8 +163,8 @@ export const guSuiFu: Book = {
       ],
     },
     {
-      title: '六煞星论',
-      subtitle: '羊陀火铃空劫之凶',
+      title: 'Luận lục sát tinh',
+      subtitle: 'Cái hung của Dương Đà Hỏa Linh Không Kiếp',
       paragraphs: [
         {
           id: 'gsf-8-1',
@@ -189,8 +189,8 @@ export const guSuiFu: Book = {
       ],
     },
     {
-      title: '十二宫论',
-      subtitle: '各宫主象与吉凶',
+      title: 'Luận 12 cung',
+      subtitle: 'Chủ tượng và cát hung của từng cung',
       paragraphs: [
         {
           id: 'gsf-9-1',

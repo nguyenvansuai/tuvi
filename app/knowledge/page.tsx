@@ -8,9 +8,9 @@ import { ALL_STARS, ALL_TOPICS, getKnowledge, STAR_BRIEF_SEO, STAR_TO_SLUG } fro
 import { TOPIC_LABEL } from '@/lib/ziwei/db-analysis';
 
 export const metadata = {
-  title: '紫微斗数知识库 · 14 主星 × 13 宫位 · 倪海厦正宗体系',
-  description: '基于倪海厦《天纪》体系与古籍《紫微斗数全集》《骨髓赋》编纂的紫微斗数知识库。覆盖 14 主星在 13 个宫位的完整论断，含一句话定调、核心论断、命盘依据、经典出处。',
-  keywords: ['紫微斗数', '倪海厦', '倪海厦紫微斗数', '紫微斗数全集', '紫微斗数全书', '14 主星', '12 宫位'],
+  title: 'Kho kiến thức Tử Vi Đẩu Số · 14 chính tinh × 13 cung · Hệ Nghê Hải Hạ',
+  description: 'Kho kiến thức Tử Vi Đẩu Số biên soạn theo hệ “Thiên Kỷ” của Nghê Hải Hạ và cổ thư “Tử Vi Đẩu Số Toàn Tập”, “Cốt Tủy Phú”: 14 chính tinh ở 13 cung, gồm tóm tắt một câu, luận đoán cốt lõi, căn cứ lá số và nguồn cổ thư.',
+  keywords: ['紫微斗数', '倪海厦', '倪海厦紫微斗数', 'Tử Vi Đẩu Số Toàn Tập', 'Tử Vi Đẩu Số Toàn Thư', '14 主星', '12 宫位'],
 };
 
 export default function KnowledgeHomePage() {
@@ -22,13 +22,13 @@ export default function KnowledgeHomePage() {
       <div className="px-6 py-4 flex items-center justify-between"
         style={{ borderBottom: '1px solid rgba(184,146,42,0.15)', background: 'var(--bg-page)' }}>
         <Link href="/" style={{ fontSize: '12px', color: 'var(--ac)', letterSpacing: '0.3em', textDecoration: 'none' }}>
-          ← 首页
+          ← Trang chủ
         </Link>
         <div style={{ fontSize: '12px', color: 'var(--tx-3)', letterSpacing: '0.2em' }}>
-          倪师方法论 · 知识库
+          Phương pháp thầy Nghê · Kho kiến thức
         </div>
         <Link href="/library" style={{ fontSize: '12px', color: 'var(--ac)', letterSpacing: '0.2em', textDecoration: 'none' }}>
-          古籍 →
+          Cổ thư →
         </Link>
       </div>
 
@@ -40,11 +40,11 @@ export default function KnowledgeHomePage() {
           <div style={{ height: '1px', width: '48px', background: 'linear-gradient(to left, transparent, rgba(184,146,42,0.4))' }} />
         </div>
         <h1 style={{ fontSize: 'clamp(28px, 4vw, 42px)', fontWeight: 700, color: 'var(--tx-0)', letterSpacing: '0.15em', marginBottom: '12px' }}>
-          紫微斗数知识库
+          Kho kiến thức Tử Vi Đẩu Số
         </h1>
         <p style={{ fontSize: '14px', color: 'var(--tx-2)', letterSpacing: '0.08em', maxWidth: '600px', margin: '0 auto', lineHeight: 1.7 }}>
-          14 主星 × 13 宫位 = <strong style={{ color: 'var(--ac)' }}>{ALL_STARS.length * ALL_TOPICS.length}</strong> 项专题<br />
-          基于倪海厦《天纪》体系编纂 · 含古籍引证
+          14 主星 × 13 宫位 = <strong style={{ color: 'var(--ac)' }}>{ALL_STARS.length * ALL_TOPICS.length}</strong>  chủ đề<br />
+          Biên soạn theo hệ “Thiên Kỷ” của Nghê Hải Hạ · có dẫn chứng cổ thư
         </p>
       </div>
 
@@ -88,7 +88,7 @@ export default function KnowledgeHomePage() {
             }}>
               <div className="flex items-baseline gap-3 mb-2">
                 <span style={{ fontSize: '20px', fontWeight: 700, color: 'var(--tx-0)', letterSpacing: '0.1em' }}>
-                  {star}星
+                  {star} 
                 </span>
                 <span style={{ fontSize: '11px', color: 'var(--tx-3)', letterSpacing: '0.15em' }}>
                   ZI WEI · 14 STARS
@@ -115,7 +115,7 @@ export default function KnowledgeHomePage() {
                         textDecoration: 'none',
                       }}
                     >
-                      入{k.palaceName} · {TOPIC_LABEL[t]}
+                       nhập {k.palaceName} · {TOPIC_LABEL[t]}
                     </Link>
                   );
                 })}

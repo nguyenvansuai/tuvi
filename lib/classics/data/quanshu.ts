@@ -8,16 +8,16 @@
 import type { Book } from '../types';
 
 export const ziWeiQuanShu: Book = {
-  title: '紫微斗数全书',
+  title: 'Tử Vi Đẩu Số Toàn Thư',
   slug: 'quanshu',
-  dynasty: '明代',
-  author: '罗洪先 编',
-  intro: '紫微斗数最系统的古籍，强调十二宫与四化的关系。是清代以降紫微学者的主要教材。',
+  dynasty: 'Đời Minh',
+  author: 'La Hồng Tiên biên soạn',
+  intro: 'Cổ thư có hệ thống nhất của Tử Vi Đẩu Số, nhấn mạnh quan hệ giữa 12 cung và Tứ Hóa. Là giáo trình chính của người học Tử Vi từ đời Thanh trở đi.',
   wordCount: 100000,
   chapters: [
     {
-      title: '十二宫论·命宫',
-      subtitle: '看命之根本',
+      title: 'Luận 12 cung · cung Mệnh',
+      subtitle: 'Căn bản của việc xem mệnh',
       paragraphs: [
         {
           id: 'qs-1-1',
@@ -37,8 +37,8 @@ export const ziWeiQuanShu: Book = {
       ],
     },
     {
-      title: '十二宫论·财帛宫',
-      subtitle: '财源所在',
+      title: 'Luận 12 cung · cung Tài Bạch',
+      subtitle: 'Nguồn tài lộc',
       paragraphs: [
         {
           id: 'qs-2-1',
@@ -53,8 +53,8 @@ export const ziWeiQuanShu: Book = {
       ],
     },
     {
-      title: '十二宫论·官禄宫',
-      subtitle: '事业之根',
+      title: 'Luận 12 cung · cung Quan Lộc',
+      subtitle: 'Gốc rễ sự nghiệp',
       paragraphs: [
         {
           id: 'qs-3-1',
@@ -69,8 +69,8 @@ export const ziWeiQuanShu: Book = {
       ],
     },
     {
-      title: '十二宫论·夫妻宫',
-      subtitle: '配偶气场',
+      title: 'Luận 12 cung · cung Phu Thê',
+      subtitle: 'Khí trường của bạn đời',
       paragraphs: [
         {
           id: 'qs-4-1',
@@ -85,8 +85,8 @@ export const ziWeiQuanShu: Book = {
       ],
     },
     {
-      title: '四化论',
-      subtitle: '化禄化权化科化忌',
+      title: 'Luận Tứ Hóa',
+      subtitle: 'Hóa Lộc, Hóa Quyền, Hóa Khoa, Hóa Kỵ',
       paragraphs: [
         {
           id: 'qs-5-1',
@@ -111,8 +111,8 @@ export const ziWeiQuanShu: Book = {
       ],
     },
     {
-      title: '机月同梁格',
-      subtitle: '稳定累积之命',
+      title: 'Cách Cơ Nguyệt Đồng Lương',
+      subtitle: 'Mệnh ổn định tích lũy',
       paragraphs: [
         {
           id: 'qs-6-1',
@@ -127,8 +127,8 @@ export const ziWeiQuanShu: Book = {
       ],
     },
     {
-      title: '双禄朝垣格',
-      subtitle: '富比陶朱',
+      title: 'Cách Song Lộc Triều Viên',
+      subtitle: 'Giàu sánh Đào Chu',
       paragraphs: [
         {
           id: 'qs-7-1',
