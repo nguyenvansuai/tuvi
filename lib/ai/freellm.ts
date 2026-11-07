@@ -34,8 +34,8 @@ export async function streamChat(messages: ChatMessage[], opts: { maxTokens?: nu
       model: process.env.FREELLM_MODEL || 'auto',
       messages,
       stream: true,
-      temperature: opts.temperature ?? 0.7,
-      max_tokens: opts.maxTokens ?? 2500,
+      temperature: opts.temperature ?? 0.5,
+      max_tokens: opts.maxTokens ?? 900,
     }),
   });
 

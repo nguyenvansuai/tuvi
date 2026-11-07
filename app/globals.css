@@ -56,6 +56,15 @@
   --r-lg:  16px;
   --r-xl:  24px;
   --r-pill:999px;
+
+  /* Token cho bàn lá số & khung luận giải (bản mã nguồn mở thiếu — Sự AI bổ sung) */
+  --t-bg: #FFFFFF;
+  --t-card: #FFFFFF;
+  --t-border: rgba(0,0,0,0.10);
+  --t-text: #1A1A18;
+  --t-text2: #3f3f3a;
+  --t-faint: #6f6f68;
+  --t-gold: #9a7414;
 }
 
 /* ─── 暗色模式 Token 覆盖 ──────────────────────────────── */
@@ -88,6 +97,14 @@
 
   --bg-card: rgba(255,255,255,0.04);
   --bg-page: #020810;
+
+  --t-bg: #07101f;
+  --t-card: #0b1526;
+  --t-border: rgba(255,255,255,0.10);
+  --t-text: #e8eef6;
+  --t-text2: #c3d0e4;
+  --t-faint: #8697b4;
+  --t-gold: #e0b553;
 }
 
 /* ─── 全局基础 ───────────────────────────────────────────── */

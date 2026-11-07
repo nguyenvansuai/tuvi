@@ -6,13 +6,10 @@ import type { ZiweiChart } from '@/lib/ziwei/types';
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
-const DEFAULT_TASK = `Hãy xem hợp lá số của hai người theo cấu trúc sau:
-**[Tổng quan mức độ hợp]** — chấm điểm hợp duyên trên thang 10 và giải thích ngắn.
-**[Cung Mệnh hai người]** — tính cách bổ trợ hay xung khắc.
-**[Cung Phu Thê đối chiếu]** — kỳ vọng tình cảm của mỗi người, điểm khớp và lệch.
-**[Tam phương tứ chính & Tứ Hóa]** — Hóa Lộc/Hóa Kỵ của người này rơi vào cung nào của người kia (nếu suy ra được).
-**[Tài lộc & hợp tác]** — có bổ trợ nhau về tiền bạc, công việc không.
-**[Lời khuyên chung sống]** — 3–5 gợi ý cụ thể.`;
+const DEFAULT_TASK = `Hai người này có hợp nhau không? Trả lời theo đúng 3 mục:
+**Kết luận** — điểm hợp duyên /10 và 1–2 câu nhận xét.
+**Điểm chính** — 3 gạch đầu dòng: tính cách (cung Mệnh), tình cảm (cung Phu Thê), tiền bạc/hợp tác.
+**Lời khuyên** — 2 gạch đầu dòng để sống hòa hợp.`;
 
 export async function POST(req: Request) {
   if (!AI_ENABLED()) return notConfigured();
@@ -29,5 +26,5 @@ export async function POST(req: Request) {
       content: `${SYSTEM_PROMPT}\n\nNhiệm vụ: xem hợp lá số (hợp duyên) giữa hai người.\n\n${chartToText(chartA, 'Người A')}\n\n${chartToText(chartB, 'Người B')}`,
     },
     { role: 'user', content: q ? `Câu hỏi về hai lá số trên: ${q}` : DEFAULT_TASK },
-  ], { maxTokens: 3000 });
+  ], { maxTokens: 1200 });
 }
