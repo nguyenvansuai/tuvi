@@ -1,11 +1,15 @@
 'use client';
 import { useState } from 'react';
+import { usePathname } from 'next/navigation';
 
 /** Thông tin thương hiệu Sự AI — nút nổi góc dưới + thẻ giới thiệu khi bấm. */
 export default function SuaiBrand() {
   const [open, setOpen] = useState(false);
+  const path = usePathname() || '';
+  // Trang lá số / hợp tuổi trên mobile có ô hỏi dính đáy → ẩn nút nổi (đã có SuaiInline trong trang)
+  const hideOnMobile = path.startsWith('/chart') || path.startsWith('/heming');
   return (
-    <div data-suai style={{ position: 'fixed', left: 16, bottom: 16, zIndex: 60, fontFamily: 'system-ui, -apple-system, "Segoe UI", Roboto, sans-serif' }}>
+    <div data-suai className={hideOnMobile ? 'hidden lg:block' : undefined} style={{ position: 'fixed', left: 16, bottom: 16, zIndex: 60, fontFamily: 'system-ui, -apple-system, "Segoe UI", Roboto, sans-serif' }}>
       {open && (
         <div
           role="dialog"
@@ -48,5 +52,19 @@ export default function SuaiBrand() {
         <span style={{ fontSize: 13, fontWeight: 700, color: '#0f4c8a', letterSpacing: 0.3 }}>SỰ AI</span>
       </button>
     </div>
+  );
+}
+
+/** Dòng thương hiệu nằm trong trang (dùng cho mobile, nơi nút nổi bị ẩn). */
+export function SuaiInline() {
+  return (
+    <a href="https://suai.vn" target="_blank" rel="noopener noreferrer"
+      style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, margin: '28px auto 8px', textDecoration: 'none', color: 'inherit', opacity: 0.9 }}>
+      <img src="/suai-avatar.jpg" alt="Sự AI" width={36} height={36}
+        style={{ width: 36, height: 36, borderRadius: '50%', objectFit: 'cover', objectPosition: '50% 22%', border: '2px solid #1aa7ec' }} />
+      <span style={{ fontSize: 13, lineHeight: 1.4 }}>
+        Phát triển bởi <strong style={{ color: '#1aa7ec' }}>SỰ AI</strong> · suai.vn
+      </span>
+    </a>
   );
 }

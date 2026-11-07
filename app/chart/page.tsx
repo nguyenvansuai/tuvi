@@ -4,6 +4,7 @@ import BirthForm from '@/components/BirthForm';
 import ChartBoard from '@/components/ChartBoard';
 import InsightPanel from '@/components/InsightPanel';
 import TimeNav, { type TimeView } from '@/components/TimeNav';
+import { SuaiInline } from '@/components/SuaiBrand';
 import { generateChart } from '@/lib/ziwei/algorithm';
 import type { BirthInfo, ZiweiChart, Palace } from '@/lib/ziwei/types';
 
@@ -34,13 +35,14 @@ export default function ChartPage() {
           (Bản  Demo lập lá số Tử Vi miễn phí do Sự AI Việt hóa, có AI luận giải.)
         </p>
         <BirthForm onSubmit={(info: BirthInfo) => setChart(generateChart(info))} />
+        <SuaiInline />
       </main>
     );
   }
 
   // ── 已起盘：命盘 + 解读 ──
   return (
-    <main style={{ maxWidth: 1280, margin: '0 auto', padding: '24px 16px' }}>
+    <main className="pb-28 lg:pb-6" style={{ maxWidth: 1280, margin: '0 auto', paddingTop: 24, paddingLeft: 16, paddingRight: 16 }}>
       <button
         type="button"
         onClick={() => { setChart(null); setSelectedPalace(null); }}
@@ -69,6 +71,7 @@ export default function ChartPage() {
         <ChartBoard chart={chart} onPalaceSelect={setSelectedPalace} />
         <InsightPanel chart={chart} selectedPalace={selectedPalace} />
       </div>
+      <SuaiInline />
     </main>
   );
 }

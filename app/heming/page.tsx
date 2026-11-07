@@ -6,6 +6,7 @@ import { formToBirthInfo } from '@/lib/ziwei/share';
 import { generateChart as buildChart } from '@/lib/ziwei/algorithm';
 import type { BirthInfo, ZiweiChart } from '@/lib/ziwei/types';
 import { useTheme } from '@/components/ThemeProvider';
+import { SuaiInline } from '@/components/SuaiBrand';
 
 // ─── AiContent 渲染器（与 InsightPanel 一致）────────────────
 function AiContent({ text, streaming }: { text: string; streaming?: boolean }) {
@@ -363,6 +364,8 @@ export default function HemingPage() {
           </div>
         )}
       </div>
+
+      <SuaiInline />
 
       <style>{`
         @media (max-width: 680px) {

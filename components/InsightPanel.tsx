@@ -1,5 +1,6 @@
 'use client';
 import { useState, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { ZiweiChart, Palace } from '@/lib/ziwei/types';
 import type { TimeView } from './TimeNav';
@@ -200,6 +201,16 @@ export default function InsightPanel({ chart, selectedPalace, selectedSiHua }: I
   const lastPalaceBranch = useRef<number | undefined>(undefined);
   const lastSiHuaKey = useRef<string | undefined>(undefined);
   const scrollRef = useRef<HTMLDivElement>(null);
+  // Mobile: ô hỏi dính đáy màn hình; sau khi người dùng hỏi thì cuộn trang tới câu trả lời
+  const [isMobile, setIsMobile] = useState(false);
+  const followRef = useRef(false);
+  const lastMsgRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const mq = window.matchMedia('(max-width: 1023px)');
+    const on = () => setIsMobile(mq.matches);
+    on(); mq.addEventListener('change', on);
+    return () => mq.removeEventListener('change', on);
+  }, []);
 
   // Keep refs in sync
   useEffect(() => { messagesRef.current = messages; }, [messages]);
@@ -211,6 +222,11 @@ export default function InsightPanel({ chart, selectedPalace, selectedSiHua }: I
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
   }, [messages]);
+  useEffect(() => {
+    if (!isMobile || !followRef.current) return;
+    followRef.current = false;
+    lastMsgRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, [messages.length]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Auto-generate 命格总览 on mount
   useEffect(() => {
@@ -338,6 +354,7 @@ Lời khuyên cụ thể, làm được ngay dựa trên Tứ Hóa này.`;
       content: m.content,
     }));
 
+    if (messagesRef.current.length > 0) followRef.current = true; // không cuộn với phần tổng quan tự chạy lúc đầu
     setMessages(prev => [...prev, userMsg]);
     setInput('');
     streamResponse(apiMessages);
@@ -353,12 +370,49 @@ Lời khuyên cụ thể, làm được ngay dựa trên Tứ Hóa này.`;
     sendMessage(input);
   };
 
+  const inputBar = (
+    <div
+      className={isMobile ? 'fixed left-0 right-0 bottom-0 z-[70] px-3 pt-2' : 'flex-shrink-0 px-3 pb-3 pt-2'}
+      style={isMobile
+        ? { background: 'var(--bg-0, #020810)', borderTop: '1px solid rgba(212,168,67,0.35)', paddingBottom: 'calc(10px + env(safe-area-inset-bottom))', boxShadow: '0 -8px 24px rgba(0,0,0,0.45)' }
+        : { borderTop: '1px solid var(--t-border)' }}
+    >
+      <div className="flex gap-2">
+        <input
+          type="text"
+          value={input}
+          onChange={e => setInput(e.target.value)}
+          onKeyDown={e => e.key === 'Enter' && !e.shiftKey && handleSend()}
+          placeholder={isMobile ? 'Hỏi về lá số của bạn…' : 'Hỏi thêm, ví dụ: Năm nay có nên đổi việc không?'}
+          disabled={loading}
+          enterKeyHint="send"
+          className={`flex-1 min-w-0 rounded-lg px-3 focus:outline-none transition-colors ${isMobile ? 'py-3 text-[16px]' : 'py-2 text-[11px]'}`}
+          style={{
+            background: isMobile ? 'rgba(255,255,255,0.06)' : 'var(--t-card)',
+            border: `1px solid ${isMobile ? 'rgba(212,168,67,0.45)' : 'var(--t-border)'}`,
+            color: 'var(--t-text)',
+          }}
+        />
+        <button
+          onClick={handleSend}
+          disabled={loading || !input.trim()}
+          className={`rounded-lg font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed ${isMobile ? 'px-5 text-[15px]' : 'px-3 py-2 text-[11px]'}`}
+          style={isMobile
+            ? { background: 'linear-gradient(135deg, #b8862e, #e0b553)', color: '#140d02', border: 'none' }
+            : { background: 'rgba(212,168,67,0.15)', border: '1px solid rgba(212,168,67,0.25)', color: 'var(--t-gold)' }}
+        >
+          {loading ? '…' : 'Hỏi'}
+        </button>
+      </div>
+    </div>
+  );
+
   return (
     <div className="flex flex-col h-full rounded-xl overflow-hidden card-glass">
 
       {/* ── Topic buttons ── */}
       <div className="flex-shrink-0 px-2 pt-2.5 pb-2" style={{ borderBottom: '1px solid var(--t-border)' }}>
-        <div className="grid grid-cols-6 gap-1">
+        <div className="flex gap-1.5 overflow-x-auto lg:grid lg:grid-cols-6 lg:gap-1 lg:overflow-visible" style={{ scrollbarWidth: 'none' }}>
           {TOPICS.map(t => {
             const isActive = activeTopic === t.key;
             return (
@@ -366,7 +420,7 @@ Lời khuyên cụ thể, làm được ngay dựa trên Tứ Hóa này.`;
                 key={t.key}
                 onClick={() => handleTopicClick(t.key)}
                 disabled={loading}
-                className="py-1.5 text-[10px] font-medium rounded-lg transition-all duration-150 disabled:opacity-40"
+                className="flex-shrink-0 px-3 py-2 text-[13px] lg:px-0 lg:py-1.5 lg:text-[10px] whitespace-nowrap font-medium rounded-lg transition-all duration-150 disabled:opacity-40"
                 style={{
                   background: isActive ? 'rgba(212,168,67,0.12)' : 'transparent',
                   border: `1px solid ${isActive ? 'rgba(212,168,67,0.3)' : 'var(--t-border)'}`,
@@ -422,6 +476,8 @@ Lời khuyên cụ thể, làm được ngay dựa trên Tứ Hóa này.`;
             return (
               <motion.div
                 key={i}
+                ref={isLastMsg ? lastMsgRef : undefined}
+                style={{ scrollMarginTop: 16 }}
                 initial={{ opacity: 0, y: 6 }}
                 animate={{ opacity: 1, y: 0 }}
               >
@@ -439,37 +495,13 @@ Lời khuyên cụ thể, làm được ngay dựa trên Tứ Hóa này.`;
         </AnimatePresence>
       </div>
 
-      {/* ── Input ── */}
-      <div className="flex-shrink-0 px-3 pb-3 pt-2" style={{ borderTop: '1px solid var(--t-border)' }}>
-        <div className="flex gap-2">
-          <input
-            type="text"
-            value={input}
-            onChange={e => setInput(e.target.value)}
-            onKeyDown={e => e.key === 'Enter' && !e.shiftKey && handleSend()}
-            placeholder="Hỏi thêm, ví dụ: Năm nay có nên đổi việc không?"
-            disabled={loading}
-            className="flex-1 rounded-lg px-3 py-2 text-[11px] focus:outline-none transition-colors"
-            style={{
-              background: 'var(--t-card)',
-              border: '1px solid var(--t-border)',
-              color: 'var(--t-text)',
-            }}
-          />
-          <button
-            onClick={handleSend}
-            disabled={loading || !input.trim()}
-            className="px-3 py-2 rounded-lg text-[11px] font-medium transition-all disabled:opacity-30 disabled:cursor-not-allowed"
-            style={{
-              background: 'rgba(212,168,67,0.15)',
-              border: '1px solid rgba(212,168,67,0.25)',
-              color: 'var(--t-gold)',
-            }}
-          >
-            {loading ? '…' : 'Hỏi'}
-          </button>
-        </div>
-      </div>
+      {/* ── Input ── (desktop: trong khung; mobile: thanh dính đáy màn hình) */}
+      {isMobile ? (
+        <>
+          <div style={{ height: 8 }} />
+          {typeof document !== 'undefined' && createPortal(inputBar, document.body)}
+        </>
+      ) : inputBar}
 
     </div>
   );
